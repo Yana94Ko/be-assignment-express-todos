@@ -1,0 +1,31 @@
+{
+  "name": "be-01-express-todos",
+  "version": "1.0.0",
+  "description": "udemy BE assignment-01 todos",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"tsc --watch --project tsconfig.json\" \"node --watch dist/app.js\" ",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yana94Ko/be-assignment-express-todos.git"
+  },
+  "keywords": [
+    "todos"
+  ],
+  "author": "Yana94Ko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Yana94Ko/be-assignment-express-todos/issues"
+  },
+  "homepage": "https://github.com/Yana94Ko/be-assignment-express-todos#readme",
+  "dependencies": {
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "concurrently": "^8.2.2"
+  }
+}
