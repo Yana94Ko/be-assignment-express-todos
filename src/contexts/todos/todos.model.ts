@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { CreateTodoDto } from "./todos.dto";
+import { CreateTodoDto, UpdateTodoDto } from "./todos.dto";
 import { Todo } from "./todos.type";
 
 export default class TodosModel {
@@ -35,5 +35,26 @@ export default class TodosModel {
     await fs.writeFile("./src/data/todos.json", stringifiedTodos);
 
     return newTodo;
+  }
+  static async update(dto: UpdateTodoDto) {
+    const todos = await fs
+      .readFile("./src/data/todos.json", {
+        encoding: "utf-8",
+      })
+      .then((data) => JSON.parse(data) as Todo[]);
+
+    todos.forEach((todo) => {
+      if (todo.id === dto.id) {
+        dto.title ? (todo.title = dto.title) : todo.title;
+        dto.completed ? (todo.completed = dto.completed) : todo.completed;
+      }
+    });
+
+    const stringifiedTodos = JSON.stringify(todos);
+    fs.writeFile("./src/data/todos.json", stringifiedTodos);
+
+    const updatedIdx = dto.id - 1;
+
+    return todos[updatedIdx];
   }
 }
