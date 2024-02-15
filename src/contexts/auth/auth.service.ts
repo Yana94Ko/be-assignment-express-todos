@@ -2,7 +2,13 @@ import bcrypt from "bcrypt";
 import { RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET_KEY } from "../config";
-import { SignUpHttpRequest, SignUpUserDto, UpdateUserDto } from "./auth.dto";
+import {
+  LogInHttpRequest,
+  SignUpHttpRequest,
+  SignUpUserDto,
+  UpdateUserDto,
+  UserHttpRequest,
+} from "./auth.dto";
 import UsersModel from "./auth.model";
 import { User } from "./auth.type";
 
@@ -31,36 +37,124 @@ const signUp: RequestHandler = async (req, res) => {
     JWT_SECRET_KEY,
     { subject: newUser.userId.toString() }
   );
+
   res.cookie("accessToken", accessToken, {
     maxAge: 1800000, // 30분
   });
   res.json(newUser);
 };
 
+const logIn: RequestHandler = async (req, res) => {
+  const { email, password }: LogInHttpRequest = req.body;
+
+  const user = await UsersModel.findOneByEmail(email);
+  if (!user) return res.status(404).send(`User Not Found by email : ${email}`);
+
+  const isVerified = await bcrypt.compare(password, user.encryptedPassword);
+
+  if (!isVerified) return res.send(400);
+
+  const accessToken = jwt.sign(
+    {
+      email: user.email,
+      userId: user.userId,
+      nickName: user.nickname,
+    },
+    JWT_SECRET_KEY,
+    { subject: user.userId.toString() }
+  );
+  res.cookie("accessToken", accessToken, {
+    maxAge: 1800000, // 30분
+  });
+  res.json(user);
+};
+const logOut: RequestHandler = (req, res) => {
+  res.clearCookie("accessToken");
+
+  res.send("Logged out successfully");
+};
+
+const refreshAccessToken: RequestHandler = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.send(400);
+    const accessToken = jwt.sign(
+      {
+        email: user.email,
+        userId: user.userId,
+        nickName: user.nickname,
+      },
+      JWT_SECRET_KEY,
+      { subject: user.userId.toString() }
+    );
+    res.cookie("accessToken", accessToken, {
+      maxAge: 1800000, // 30분
+    });
+    res.send("New access token generated successfully");
+  } catch (error) {
+    // 리프레시 토큰이 잘못되었을 경우 401 Unauthorized 에러를 응답합니다.
+    res.sendStatus(401);
+  }
+};
+
 const getUsers: RequestHandler = async (_, res) => {
-  const Users = await UsersModel.findMany();
-  res.json(Users);
+  const users = await UsersModel.findMany();
+  res.json(users);
 };
 
 const getUser: RequestHandler = async (req, res) => {
-  const UserId = Number(req.params.UserId);
-  const User = await UsersModel.findOne(UserId);
-  res.json(User);
+  const userId = Number(req.params.userId);
+  const user = await UsersModel.findOne(userId);
+  res.json(user);
 };
 
 const updateUser: RequestHandler = async (req, res) => {
-  const UserId = Number(req.params.UserId);
-  const dto: UpdateUserDto = req.body;
-  if (dto.userId !== UserId) return res.sendStatus(400);
+  const userId = Number(req.params.userId);
+  const request: UserHttpRequest = req.body;
+  if (request.userId !== userId) return res.sendStatus(400);
+
+  const user = await UsersModel.findOneByEmail(request.email);
+  if (!user)
+    return res.status(404).send(`User Not Found by email : ${request.email}`);
+
+  const isVerified = await bcrypt.compare(
+    request.password,
+    user.encryptedPassword
+  );
+
+  if (!isVerified) return res.send(400);
+  const encryptedNewPassword = request.newPassword
+    ? await bcrypt.hash(request.newPassword, 12)
+    : undefined;
+
+  const dto: UpdateUserDto = {
+    userId: request.userId,
+    email: request.email,
+    encryptedNewPassword: encryptedNewPassword,
+    nickname: request.nickname,
+  };
+
   const newUsers = await UsersModel.update(dto);
   res.json(newUsers);
 };
 
 const deleteUser: RequestHandler = async (req, res) => {
-  const UserId = Number(req.params.UserId);
-  const User: User = req.body;
-  if (User.userId !== UserId) return res.sendStatus(400);
-  const deletedUser = await UsersModel.delete(UserId, User);
+  const userId = Number(req.params.userId);
+  const user: UserHttpRequest = req.body;
+  if (user.userId !== userId) return res.sendStatus(400);
+
+  const existUser = await UsersModel.findOneByEmail(user.email);
+  if (!existUser)
+    return res.status(404).send(`User Not Found by email : ${user.email}`);
+
+  const isVerified = await bcrypt.compare(
+    user.password,
+    existUser.encryptedPassword
+  );
+
+  if (!isVerified) return res.send(400);
+
+  const deletedUser = await UsersModel.delete(userId, user.email);
   res.json(deletedUser);
 };
 
@@ -68,6 +162,9 @@ const usersService = {
   getUsers,
   getUser,
   signUp,
+  logIn,
+  logOut,
+  refreshAccessToken,
   updateUser,
   deleteUser,
 };

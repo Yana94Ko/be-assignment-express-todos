@@ -13,6 +13,7 @@ export default class UsersModel {
 
     return users;
   }
+
   static async findOne(userId: number) {
     const users = await fs
       .readFile("./src/data/users.json", {
@@ -20,10 +21,11 @@ export default class UsersModel {
       })
       .then((data) => JSON.parse(data) as User[]);
 
-    const user = users.filter((user) => user.userId === userId);
+    const user = users.find((user) => user.userId === userId);
 
     return user;
   }
+
   static async findOneByEmail(email: string) {
     const users = await fs
       .readFile("./src/data/users.json", {
@@ -35,6 +37,7 @@ export default class UsersModel {
 
     return user;
   }
+
   static async save(dto: SignUpUserDto) {
     const users = await fs
       .readFile("./src/data/users.json", { encoding: "utf-8" })
@@ -48,6 +51,7 @@ export default class UsersModel {
 
     return newUser;
   }
+
   static async update(dto: UpdateUserDto) {
     const users = await fs
       .readFile("./src/data/users.json", {
@@ -70,7 +74,7 @@ export default class UsersModel {
 
     return users[updatedIdx];
   }
-  static async delete(userId: number, user: User) {
+  static async delete(userId: number, email: string) {
     const users = await fs
       .readFile("./src/data/users.json", {
         encoding: "utf-8",
@@ -79,14 +83,14 @@ export default class UsersModel {
 
     const userData = users.find((user) => user.userId === userId);
     if (!userData) return response.status(404);
-    if (JSON.stringify(userData) !== JSON.stringify(user))
-      return response.status(400);
+
+    if (userData.email !== email) return response.status(400);
 
     const deletedUsers = users.filter((user) => user.userId !== userId);
 
     const stringifiedDeletedUsers = JSON.stringify(deletedUsers);
     fs.writeFile("./src/data/users.json", stringifiedDeletedUsers);
 
-    return `delete success ${JSON.stringify(user)}`;
+    return `delete success ${JSON.stringify(email)}`;
   }
 }
