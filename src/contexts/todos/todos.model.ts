@@ -1,3 +1,4 @@
+import { response } from "express";
 import fs from "fs/promises";
 import { CreateTodoDto, UpdateTodoDto } from "./todos.dto";
 import { Todo } from "./todos.type";
@@ -56,5 +57,24 @@ export default class TodosModel {
     const updatedIdx = dto.id - 1;
 
     return todos[updatedIdx];
+  }
+  static async delete(todoId: number, todo: Todo) {
+    const todos = await fs
+      .readFile("./src/data/todos.json", {
+        encoding: "utf-8",
+      })
+      .then((data) => JSON.parse(data) as Todo[]);
+
+    const todoData = todos.find((todo) => todo.id === todoId);
+    if (!todoData) return response.status(404);
+    if (JSON.stringify(todoData) !== JSON.stringify(todo))
+      return response.status(400);
+
+    const deletedTodos = todos.filter((todo) => todo.id !== todoId);
+
+    const stringifiedDeletedTodos = JSON.stringify(deletedTodos);
+    fs.writeFile("./src/data/todos.json", stringifiedDeletedTodos);
+
+    return `delete success ${JSON.stringify(todo)}`;
   }
 }

@@ -7,5 +7,6 @@ todosController.get("/", todosService.getTodos);
 todosController.get("/:todoId", todosService.getTodo);
 todosController.post("/", todosService.createTodo);
 todosController.put("/:todoId", todosService.updateTodo);
+todosController.delete("/:todoId", todosService.deleteTodo);
 
 export default todosController;
