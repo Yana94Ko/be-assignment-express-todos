@@ -68,6 +68,34 @@ const logIn: RequestHandler = async (req, res) => {
   });
   res.json(user);
 };
+const logOut: RequestHandler = (req, res) => {
+  res.clearCookie("accessToken");
+
+  res.send("Logged out successfully");
+};
+
+const refreshAccessToken: RequestHandler = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.send(400);
+    const accessToken = jwt.sign(
+      {
+        email: user.email,
+        userId: user.userId,
+        nickName: user.nickname,
+      },
+      JWT_SECRET_KEY,
+      { subject: user.userId.toString() }
+    );
+    res.cookie("accessToken", accessToken, {
+      maxAge: 1800000, // 30분
+    });
+    res.send("New access token generated successfully");
+  } catch (error) {
+    // 리프레시 토큰이 잘못되었을 경우 401 Unauthorized 에러를 응답합니다.
+    res.sendStatus(401);
+  }
+};
 
 const getUsers: RequestHandler = async (_, res) => {
   const users = await UsersModel.findMany();
@@ -135,6 +163,8 @@ const usersService = {
   getUser,
   signUp,
   logIn,
+  logOut,
+  refreshAccessToken,
   updateUser,
   deleteUser,
 };

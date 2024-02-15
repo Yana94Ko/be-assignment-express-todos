@@ -5,6 +5,8 @@ const authController = Router();
 
 authController.post("/sign-up", authService.signUp);
 authController.post("/log-in", authService.logIn);
+authController.post("/log-out", authService.logOut);
+authController.post("/refresh-token", authService.refreshAccessToken);
 authController.get("/", authService.getUsers);
 authController.get("/:userId", authService.getUser);
 authController.put("/:userId", authService.updateUser);
